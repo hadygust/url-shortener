@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/hadygust/url-shortener/internal/auth"
+	"github.com/jmoiron/sqlx"
 )
 
 func (app *application) mount() *gin.Engine {
@@ -12,6 +14,14 @@ func (app *application) mount() *gin.Engine {
 	r.GET("/", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, "Helo Url")
 	})
+
+	authRepo := auth.NewRepository(app.db)
+	authService := auth.NewUserService(authRepo)
+	authHandler := auth.NewUserHandler(authService)
+
+	auth := r.Group("/auth")
+	auth.POST("/register", authHandler.RegisterUser)
+
 	return r
 }
 
@@ -31,4 +41,5 @@ type dbConfig struct {
 
 type application struct {
 	cfg Config
+	db  *sqlx.DB
 }
