@@ -1,22 +1,34 @@
-package cmd
+package main
 
+import (
+	"net/http"
 
-func app *Application mount()
+	"github.com/gin-gonic/gin"
+)
 
+func (app *application) mount() *gin.Engine {
+	r := gin.Default()
 
+	r.GET("/", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, "Helo Url")
+	})
+	return r
+}
 
-type Service interface {
+func (app *application) run(router *gin.Engine) error {
+
+	return router.Run(app.cfg.addr)
 }
 
 type Config struct {
-	db dbConfig
+	addr string
+	db   dbConfig
 }
 
 type dbConfig struct {
 	dsn string
 }
 
-type Application struct {
-	svc Service
+type application struct {
 	cfg Config
 }
