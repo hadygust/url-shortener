@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hadygust/url-shortener/internal/auth"
+	"github.com/hadygust/url-shortener/internal/url"
 	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
 )
@@ -22,6 +23,13 @@ func (app *application) mount() *gin.Engine {
 	auth.POST("/register", authMiddleware.RequireNonAuth, authHandler.RegisterUser)
 	auth.POST("/login", authMiddleware.RequireNonAuth, authHandler.LoginUser)
 	auth.POST("/logout", authMiddleware.RequireAuth, authHandler.Logout)
+
+	urlRepo := url.NewRepository(app.db, app.redis)
+	urlService := url.NewService(urlRepo)
+	urlHandler := url.NewHandler(urlService)
+
+	url := r.Group("/urls")
+	url.POST("/", authMiddleware.RequireAuth, urlHandler.CreateUrl)
 
 	r.GET("/", authMiddleware.RequireAuth, func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, "Helo Url")

@@ -1,6 +1,10 @@
 package url
 
-import "time"
+import (
+	"time"
+
+	"github.com/hadygust/url-shortener/internal/model"
+)
 
 type UrlResponse struct {
 	ID          string     `json:"id"`
@@ -12,6 +16,16 @@ type UrlResponse struct {
 
 type CreateUrlRequest struct {
 	OriginalUrl string     `json:"original_url" binding:"required,url"`
-	ShortCode   string     `json:"short_code,omitempty"`
+	ShortCode   string     `json:"short_code"`
 	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
+}
+
+func NewUrlResponse(url model.Url) *UrlResponse {
+	return &UrlResponse{
+		ID:          url.ID.String(),
+		ShortCode:   url.ShortCode,
+		OriginalUrl: url.OriginalUrl,
+		CreatedAt:   url.CreatedAt.Time,
+		ExpiresAt:   &url.ExpiresAt.Time,
+	}
 }
