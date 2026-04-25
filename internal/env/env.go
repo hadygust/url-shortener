@@ -1,8 +1,11 @@
 package env
 
-import "os"
+import (
+	"errors"
+	"os"
+)
 
-func LoadEnv(key string, fallback string) string {
+func LoadEnvFallback(key string, fallback string) string {
 	res, ok := os.LookupEnv(key)
 
 	if !ok {
@@ -10,4 +13,14 @@ func LoadEnv(key string, fallback string) string {
 	}
 
 	return res
+}
+
+func LoadEnv(key string) (string, error) {
+	res, ok := os.LookupEnv(key)
+
+	if !ok {
+		return "", errors.New("Key does not exists")
+	}
+
+	return res, nil
 }

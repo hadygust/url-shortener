@@ -5,7 +5,9 @@ import (
 	"github.com/hadygust/url-shortener/internal/model"
 )
 
-type LoginResponse struct {
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type RegisterRequest struct {

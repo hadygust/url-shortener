@@ -2,8 +2,11 @@ package auth
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/hadygust/url-shortener/internal/env"
 )
 
 func (h *handler) RegisterUser(c *gin.Context) {
@@ -21,6 +24,56 @@ func (h *handler) RegisterUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, user)
+}
+
+func (h *handler) LoginUser(c *gin.Context) {
+	var login LoginRequest
+	err := c.BindJSON(&login)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	user, tokenString, err := h.svc.loginUser(login)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.SetCookie("Authentication", tokenString, 60*15, "", "", false, true)
+
+	c.JSON(http.StatusOK, user)
+}
+
+func (h *handler) Logout(c *gin.Context) {
+	tokenString, err := c.Cookie("Authentication")
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (any, error) {
+		secret, err := env.LoadEnv("JWT_SECRET")
+		if err != nil {
+			return nil, err
+		}
+		return []byte(secret), nil
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	claims := token.Claims.(jwt.MapClaims)
+
+	jti := claims["jti"].(string)
+	exp := int64(claims["exp"].(float64))
+
+	h.svc.blacklistToken(jti, time.Unix(exp, 0))
+
+	c.SetCookie("Authentication", "", -1, "", "", false, true)
+	c.JSON(http.StatusOK, "Success")
 }
 
 type handler struct {

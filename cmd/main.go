@@ -8,6 +8,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -16,11 +17,11 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	host := env.LoadEnv("POSTGRES_HOST", "localhost")
-	port := env.LoadEnv("POSTGRES_PORT", "5432")
-	user := env.LoadEnv("POSTGRES_USER", "postgres")
-	dbname := env.LoadEnv("POSTGRES_DB", "url_short")
-	password := env.LoadEnv("POSTGRES_PW", "postgres")
+	host := env.LoadEnvFallback("POSTGRES_HOST", "localhost")
+	port := env.LoadEnvFallback("POSTGRES_PORT", "5432")
+	user := env.LoadEnvFallback("POSTGRES_USER", "postgres")
+	dbname := env.LoadEnvFallback("POSTGRES_DB", "url_short")
+	password := env.LoadEnvFallback("POSTGRES_PW", "postgres")
 	dsn := fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=disable", host, port, dbname, user, password)
 
 	cfg := Config{
@@ -35,9 +36,15 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	redis := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // No password set
+		DB:       0,  // Use default DB
+	})
 	app := application{
-		cfg: cfg,
-		db:  db,
+		cfg:   cfg,
+		db:    db,
+		redis: redis,
 	}
 
 	err = app.run(app.mount())
