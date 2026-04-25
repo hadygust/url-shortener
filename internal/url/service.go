@@ -2,9 +2,11 @@ package url
 
 import (
 	"log"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/hadygust/url-shortener/internal/model"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Service interface {
@@ -23,6 +25,7 @@ func (s *urlService) CreateUrl(reqUrl CreateUrlRequest, userId string) (UrlRespo
 		UserId:      userUuid,
 		ShortCode:   reqUrl.ShortCode,
 		OriginalUrl: reqUrl.OriginalUrl,
+		ExpiresAt:   pgtype.Timestamptz{Time: time.Now().Add(time.Hour * 24), Valid: true},
 	}
 
 	resUrl, err := s.repo.CreateUrl(url)

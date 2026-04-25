@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -24,6 +25,8 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 
 	if err != nil {
+		log.Println("Parse failed")
+		c.SetCookie("Authentication", "", -1, "", "", false, true)
 		c.AbortWithStatusJSON(http.StatusUnauthorized, err.Error())
 		return
 	}
@@ -31,6 +34,12 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 	claims := token.Claims.(jwt.MapClaims)
 
 	id := claims["id"].(string)
+	jti := claims["jti"].(string)
+
+	ok := m.svc.checkBlacklistToken(jti)
+	if !ok {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, "token invalid")
+	}
 
 	user, err := m.svc.getUserByID(id)
 

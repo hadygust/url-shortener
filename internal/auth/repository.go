@@ -14,6 +14,7 @@ type Repository interface {
 	loginUser(LoginRequest) (model.User, error)
 	blacklistToken(string, time.Time) error
 	getUserByID(string) (model.User, error)
+	checkBlacklistToken(string) bool
 }
 
 func (repo *userRepository) registerUser(newUser model.User) (model.User, error) {
@@ -47,6 +48,16 @@ func (repo *userRepository) loginUser(login LoginRequest) (model.User, error) {
 func (repo *userRepository) blacklistToken(jti string, exp time.Time) error {
 	repo.redis.Set(context.Background(), "blacklist:"+jti, "1", time.Until(exp))
 	return nil
+}
+
+func (repo *userRepository) checkBlacklistToken(jti string) bool {
+	_, err := repo.redis.Get(context.Background(), "blacklist:"+jti).Result()
+
+	if err == nil {
+		return false
+	}
+
+	return true
 }
 
 func (repo *userRepository) getUserByID(id string) (model.User, error) {

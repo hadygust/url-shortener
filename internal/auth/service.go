@@ -16,6 +16,7 @@ type Service interface {
 	loginUser(LoginRequest) (UserResponse, string, error)
 	blacklistToken(string, time.Time) error
 	getUserByID(string) (UserResponse, error)
+	checkBlacklistToken(string) bool
 }
 
 var (
@@ -88,6 +89,10 @@ func (s *userService) getUserByID(id string) (UserResponse, error) {
 	}
 
 	return *NewUserResponse(user), nil
+}
+
+func (s *userService) checkBlacklistToken(jti string) bool {
+	return s.repo.checkBlacklistToken(jti)
 }
 
 type userService struct {
