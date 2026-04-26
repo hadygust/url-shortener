@@ -34,13 +34,15 @@ jobs:
     - name: Download dependencies
       run: go mod download
     
-    - name: Run tests
-      run: go test -v -cover -race ./...
+    - name: Run tests with race detection
+      run: go test -v -race ./...
       env:
         DATABASE_URL: postgres://postgres:postgres@localhost:5432/test?sslmode=disable
     
     - name: Generate coverage report
       run: go test -v -coverprofile=coverage.out ./...
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test?sslmode=disable
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
