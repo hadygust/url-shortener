@@ -37,13 +37,13 @@ jobs:
     - name: Run tests with race detection
       run: go test -v -race ./...
       env:
-        GOTOOLCHAIN: go1.21
+        GOTOOLCHAIN: go1.25.0+auto
         DATABASE_URL: postgres://postgres:postgres@localhost:5432/test?sslmode=disable
     
     - name: Generate coverage report
       run: go test -v -coverprofile=coverage.out ./...
       env:
-        GOTOOLCHAIN: go1.21
+        GOTOOLCHAIN: go1.25.0+auto
         DATABASE_URL: postgres://postgres:postgres@localhost:5432/test?sslmode=disable
     
     - name: Upload coverage to Codecov
