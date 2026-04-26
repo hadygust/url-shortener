@@ -33,6 +33,53 @@ func (h *handler) CreateUrl(c *gin.Context) {
 	c.JSON(http.StatusOK, urlResp)
 }
 
+func (h *handler) GetAllUserUrl(c *gin.Context) {
+	user, ok := c.Get("user")
+
+	if !ok {
+		c.JSON(http.StatusUnauthorized, "user not found")
+		return
+	}
+
+	urls, err := h.svc.GetAllUserUrl(user.(auth.UserResponse).ID.String())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, urls)
+}
+
+func (h *handler) GetOrigin(c *gin.Context) {
+	shortCode := c.Param("shortCode")
+
+	origin, err := h.svc.GetOrigin(shortCode)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.Redirect(http.StatusMovedPermanently, origin)
+}
+
+func (h *handler) DeleteUrl(c *gin.Context) {
+	shortCode := c.Param("shortCode")
+	userId, ok := c.Get("user")
+
+	if !ok {
+		c.JSON(http.StatusUnauthorized, errors.New("you must be logged in to do that"))
+		return
+	}
+
+	url, err := h.svc.DeleteUrl(shortCode, userId.(auth.UserResponse).ID.String())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, url)
+}
+
 type handler struct {
 	svc Service
 }

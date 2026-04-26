@@ -6,7 +6,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/hadygust/url-shortener/internal/env"
 )
 
 func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
@@ -17,7 +16,7 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 	}
 
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (any, error) {
-		secret, err := env.LoadEnv("JWT_SECRET")
+		secret := m.svc.JwtSecret()
 		if err != nil {
 			return nil, err
 		}
@@ -36,12 +35,13 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 	id := claims["id"].(string)
 	jti := claims["jti"].(string)
 
-	ok := m.svc.checkBlacklistToken(jti)
+	ok := m.svc.CheckBlacklistToken(jti)
 	if !ok {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, "token invalid")
+		c.AbortWithStatusJSON(http.StatusForbidden, "token invalid")
+		return
 	}
 
-	user, err := m.svc.getUserByID(id)
+	user, err := m.svc.GetUserByID(id)
 
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, err.Error())

@@ -17,7 +17,7 @@ func (h *handler) RegisterUser(c *gin.Context) {
 		return
 	}
 
-	user, err := h.svc.registerUser(register)
+	user, err := h.svc.RegisterUser(register)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, err.Error())
 		return
@@ -34,7 +34,7 @@ func (h *handler) LoginUser(c *gin.Context) {
 		return
 	}
 
-	user, tokenString, err := h.svc.loginUser(login)
+	user, tokenString, err := h.svc.LoginUser(login)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, err.Error())
 		return
@@ -70,7 +70,7 @@ func (h *handler) Logout(c *gin.Context) {
 	jti := claims["jti"].(string)
 	exp := int64(claims["exp"].(float64))
 
-	h.svc.blacklistToken(jti, time.Unix(exp, 0))
+	h.svc.BlacklistToken(jti, time.Unix(exp, 0))
 
 	c.SetCookie("Authentication", "", -1, "", "", false, true)
 	c.JSON(http.StatusOK, "Success")

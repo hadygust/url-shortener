@@ -1,6 +1,7 @@
 package url
 
 import (
+	"errors"
 	"log"
 	"time"
 
@@ -11,6 +12,9 @@ import (
 
 type Service interface {
 	CreateUrl(CreateUrlRequest, string) (UrlResponse, error)
+	GetAllUserUrl(string) ([]UrlResponse, error)
+	GetOrigin(string) (string, error)
+	DeleteUrl(string, string) (UrlResponse, error)
 }
 
 func (s *urlService) CreateUrl(reqUrl CreateUrlRequest, userId string) (UrlResponse, error) {
@@ -37,6 +41,40 @@ func (s *urlService) CreateUrl(reqUrl CreateUrlRequest, userId string) (UrlRespo
 	urlResp := NewUrlResponse(resUrl)
 
 	return *urlResp, nil
+}
+
+func (s *urlService) GetAllUserUrl(userId string) ([]UrlResponse, error) {
+	urls, err := s.repo.GetAllUserUrl(userId)
+	if err != nil {
+		return []UrlResponse{}, err
+	}
+
+	urlResps := []UrlResponse{}
+
+	for _, url := range urls {
+		urlResps = append(urlResps, *NewUrlResponse(url))
+	}
+
+	return urlResps, nil
+}
+
+func (s *urlService) GetOrigin(shortCode string) (string, error) {
+	return s.repo.GetOrigin(shortCode)
+}
+
+func (s *urlService) DeleteUrl(shortCode string, userId string) (UrlResponse, error) {
+	url, err := s.repo.DeleteUrl(shortCode)
+	if err != nil {
+		return UrlResponse{}, err
+	}
+
+	if url.UserId.String() != userId {
+		return UrlResponse{}, errors.New("You are not authorized to delete this url")
+	}
+
+	res := *NewUrlResponse(url)
+
+	return res, nil
 }
 
 type urlService struct {

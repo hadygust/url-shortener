@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hadygust/url-shortener/internal/auth"
+	"github.com/hadygust/url-shortener/internal/env"
 	"github.com/hadygust/url-shortener/internal/url"
 	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
@@ -13,8 +14,13 @@ import (
 func (app *application) mount() *gin.Engine {
 	r := gin.Default()
 
+	jwtSecret, err := env.LoadEnv("JWT_SECRET")
+	if err != nil {
+		panic("JWT KEY NOT FOUND")
+	}
+
 	authRepo := auth.NewRepository(app.db, app.redis)
-	authService := auth.NewUserService(authRepo)
+	authService := auth.NewUserService(authRepo, jwtSecret)
 	authHandler := auth.NewUserHandler(authService)
 
 	authMiddleware := auth.NewMiddleware(authService)
@@ -30,6 +36,10 @@ func (app *application) mount() *gin.Engine {
 
 	url := r.Group("/urls")
 	url.POST("/", authMiddleware.RequireAuth, urlHandler.CreateUrl)
+	url.GET("/", authMiddleware.RequireAuth, urlHandler.GetAllUserUrl)
+	url.DELETE("/:shortCode", authMiddleware.RequireAuth, urlHandler.DeleteUrl)
+
+	r.GET("/:shortCode", urlHandler.GetOrigin)
 
 	r.GET("/", authMiddleware.RequireAuth, func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, "Helo Url")

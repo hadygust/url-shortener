@@ -6,24 +6,24 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/hadygust/url-shortener/internal/env"
 	"github.com/hadygust/url-shortener/internal/model"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type Service interface {
-	registerUser(RegisterRequest) (UserResponse, error)
-	loginUser(LoginRequest) (UserResponse, string, error)
-	blacklistToken(string, time.Time) error
-	getUserByID(string) (UserResponse, error)
-	checkBlacklistToken(string) bool
+	RegisterUser(RegisterRequest) (UserResponse, error)
+	LoginUser(LoginRequest) (UserResponse, string, error)
+	BlacklistToken(string, time.Time) error
+	GetUserByID(string) (UserResponse, error)
+	CheckBlacklistToken(string) bool
+	JwtSecret() string
 }
 
 var (
 	ErrEmailUsed = errors.New("Email already registered")
 )
 
-func (s *userService) registerUser(register RegisterRequest) (UserResponse, error) {
+func (s *userService) RegisterUser(register RegisterRequest) (UserResponse, error) {
 	// Generate Password
 	password, err := bcrypt.GenerateFromPassword([]byte(register.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -48,7 +48,7 @@ func (s *userService) registerUser(register RegisterRequest) (UserResponse, erro
 	return *userResp, nil
 }
 
-func (s *userService) loginUser(login LoginRequest) (UserResponse, string, error) {
+func (s *userService) LoginUser(login LoginRequest) (UserResponse, string, error) {
 	user, err := s.repo.loginUser(login)
 	if err != nil {
 		return UserResponse{}, "", err
@@ -59,10 +59,7 @@ func (s *userService) loginUser(login LoginRequest) (UserResponse, string, error
 		return UserResponse{}, "", err
 	}
 
-	key, err := env.LoadEnv("JWT_SECRET")
-	if err != nil {
-		return UserResponse{}, "", err
-	}
+	key := s.jwtSecret
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":  user.ID,
@@ -78,11 +75,15 @@ func (s *userService) loginUser(login LoginRequest) (UserResponse, string, error
 	return *NewUserResponse(user), tokenString, nil
 }
 
-func (s *userService) blacklistToken(jti string, exp time.Time) error {
+func (s *userService) BlacklistToken(jti string, exp time.Time) error {
 	return s.repo.blacklistToken(jti, exp)
 }
 
-func (s *userService) getUserByID(id string) (UserResponse, error) {
+func (s *userService) CheckBlacklistToken(jti string) bool {
+	return s.repo.checkBlacklistToken(jti)
+}
+
+func (s *userService) GetUserByID(id string) (UserResponse, error) {
 	user, err := s.repo.getUserByID(id)
 	if err != nil {
 		return UserResponse{}, err
@@ -91,16 +92,18 @@ func (s *userService) getUserByID(id string) (UserResponse, error) {
 	return *NewUserResponse(user), nil
 }
 
-func (s *userService) checkBlacklistToken(jti string) bool {
-	return s.repo.checkBlacklistToken(jti)
+func (s *userService) JwtSecret() string {
+	return s.jwtSecret
 }
 
 type userService struct {
-	repo Repository
+	repo      Repository
+	jwtSecret string
 }
 
-func NewUserService(repo Repository) Service {
+func NewUserService(repo Repository, jwtSecret string) Service {
 	return &userService{
-		repo: repo,
+		repo:      repo,
+		jwtSecret: jwtSecret,
 	}
 }
