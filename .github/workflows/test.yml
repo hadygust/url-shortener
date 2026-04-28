@@ -33,6 +33,9 @@ jobs:
     
     - name: Download dependencies
       run: go mod download
+
+    - name: Run Migrations
+      run: goose up
     
     - name: Run tests with race detection
       run: go test -v -race ./...
