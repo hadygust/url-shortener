@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/hadygust/url-shortener/internal/cache"
 	"github.com/hadygust/url-shortener/internal/env"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
-	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -36,15 +36,12 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	redis := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // No password set
-		DB:       0,  // Use default DB
-	})
+	cache := cache.NewRedisCache("localhost:6379")
+
 	app := application{
 		cfg:   cfg,
 		db:    db,
-		redis: redis,
+		cache: cache,
 	}
 
 	err = app.run(app.mount())

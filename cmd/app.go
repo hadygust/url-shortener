@@ -5,10 +5,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hadygust/url-shortener/internal/auth"
+	"github.com/hadygust/url-shortener/internal/cache"
 	"github.com/hadygust/url-shortener/internal/env"
 	"github.com/hadygust/url-shortener/internal/url"
 	"github.com/jmoiron/sqlx"
-	"github.com/redis/go-redis/v9"
 )
 
 func (app *application) mount() *gin.Engine {
@@ -19,8 +19,8 @@ func (app *application) mount() *gin.Engine {
 		panic("JWT KEY NOT FOUND")
 	}
 
-	authRepo := auth.NewRepository(app.db, app.redis)
-	authService := auth.NewUserService(authRepo, jwtSecret)
+	authRepo := auth.NewRepository(app.db)
+	authService := auth.NewUserService(authRepo, app.cache, jwtSecret)
 	authHandler := auth.NewUserHandler(authService)
 
 	authMiddleware := auth.NewMiddleware(authService)
@@ -30,8 +30,8 @@ func (app *application) mount() *gin.Engine {
 	auth.POST("/login", authMiddleware.RequireNonAuth, authHandler.LoginUser)
 	auth.POST("/logout", authMiddleware.RequireAuth, authHandler.Logout)
 
-	urlRepo := url.NewRepository(app.db, app.redis)
-	urlService := url.NewService(urlRepo)
+	urlRepo := url.NewRepository(app.db)
+	urlService := url.NewService(urlRepo, app.cache)
 	urlHandler := url.NewHandler(urlService)
 
 	url := r.Group("/urls")
@@ -65,5 +65,5 @@ type dbConfig struct {
 type application struct {
 	cfg   Config
 	db    *sqlx.DB
-	redis *redis.Client
+	cache cache.Cache
 }

@@ -2,10 +2,12 @@ package auth
 
 import (
 	"errors"
+	"log"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/hadygust/url-shortener/internal/cache"
 	"github.com/hadygust/url-shortener/internal/model"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -76,11 +78,19 @@ func (s *userService) LoginUser(login LoginRequest) (UserResponse, string, error
 }
 
 func (s *userService) BlacklistToken(jti string, exp time.Time) error {
-	return s.repo.blacklistToken(jti, exp)
+	return s.cache.Set("blacklist:"+jti, 1, time.Until(exp))
 }
 
 func (s *userService) CheckBlacklistToken(jti string) bool {
-	return s.repo.checkBlacklistToken(jti)
+	test, err := s.cache.Get("blacklist:" + jti)
+
+	log.Printf("Black list: %#v err: %#v", test, err)
+
+	if test == nil {
+		return false
+	}
+
+	return true
 }
 
 func (s *userService) GetUserByID(id string) (UserResponse, error) {
@@ -98,12 +108,14 @@ func (s *userService) JwtSecret() string {
 
 type userService struct {
 	repo      Repository
+	cache     cache.Cache
 	jwtSecret string
 }
 
-func NewUserService(repo Repository, jwtSecret string) Service {
+func NewUserService(repo Repository, cache cache.Cache, jwtSecret string) Service {
 	return &userService{
 		repo:      repo,
+		cache:     cache,
 		jwtSecret: jwtSecret,
 	}
 }

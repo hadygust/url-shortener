@@ -1,11 +1,12 @@
 package url
 
 import (
+	"database/sql"
+	"errors"
 	"log"
 
 	"github.com/hadygust/url-shortener/internal/model"
 	"github.com/jmoiron/sqlx"
-	"github.com/redis/go-redis/v9"
 )
 
 type Repository interface {
@@ -75,9 +76,9 @@ func (repo *urlRepository) DeleteUrl(shortCode string) (model.Url, error) {
 	log.Println(shortCode)
 	err := repo.db.Get(&deletedUrl, query, shortCode)
 	if err != nil {
-		// if errors.Is(err, sql.ErrNoRows) {
-		// 	err = errors.New("url didnt exists")
-		// }
+		if errors.Is(err, sql.ErrNoRows) {
+			err = errors.New("url didnt exists")
+		}
 		return model.Url{}, err
 	}
 
@@ -85,13 +86,11 @@ func (repo *urlRepository) DeleteUrl(shortCode string) (model.Url, error) {
 }
 
 type urlRepository struct {
-	db    *sqlx.DB
-	redis *redis.Client
+	db *sqlx.DB
 }
 
-func NewRepository(db *sqlx.DB, redis *redis.Client) *urlRepository {
+func NewRepository(db *sqlx.DB) *urlRepository {
 	return &urlRepository{
-		db:    db,
-		redis: redis,
+		db: db,
 	}
 }

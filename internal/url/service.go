@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/hadygust/url-shortener/internal/cache"
 	"github.com/hadygust/url-shortener/internal/model"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -59,7 +60,23 @@ func (s *urlService) GetAllUserUrl(userId string) ([]UrlResponse, error) {
 }
 
 func (s *urlService) GetOrigin(shortCode string) (string, error) {
-	return s.repo.GetOrigin(shortCode)
+
+	// Check cache
+	origin, err := s.cache.Get("shortCode:" + shortCode)
+	if err != nil {
+		return "", err
+	}
+
+	if origin != nil {
+		originStr, ok := origin.(string)
+		if !ok {
+			return "", errors.New("cache type mismatch")
+		}
+		return originStr, nil
+	}
+
+	originStr, err := s.repo.GetOrigin(shortCode)
+	return originStr, err
 }
 
 func (s *urlService) DeleteUrl(shortCode string, userId string) (UrlResponse, error) {
@@ -78,11 +95,13 @@ func (s *urlService) DeleteUrl(shortCode string, userId string) (UrlResponse, er
 }
 
 type urlService struct {
-	repo Repository
+	repo  Repository
+	cache cache.Cache
 }
 
-func NewService(repo Repository) *urlService {
+func NewService(repo Repository, cache cache.Cache) *urlService {
 	return &urlService{
-		repo: repo,
+		repo:  repo,
+		cache: cache,
 	}
 }
