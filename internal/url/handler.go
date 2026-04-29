@@ -6,11 +6,11 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/hadygust/url-shortener/internal/auth"
+	"github.com/hadygust/url-shortener/internal/dto"
 )
 
 func (h *handler) CreateUrl(c *gin.Context) {
-	var urlReq CreateUrlRequest
+	var urlReq dto.CreateUrlRequest
 	if err := c.BindJSON(&urlReq); err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
@@ -22,9 +22,9 @@ func (h *handler) CreateUrl(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, errors.New("You must be logged in to do that"))
 		return
 	}
-	log.Printf("User: %v", user.(auth.UserResponse))
+	log.Printf("User: %v", user.(dto.UserResponse))
 
-	urlResp, err := h.svc.CreateUrl(urlReq, user.(auth.UserResponse).ID.String())
+	urlResp, err := h.svc.CreateUrl(urlReq, user.(dto.UserResponse).ID.String())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
@@ -41,7 +41,7 @@ func (h *handler) GetAllUserUrl(c *gin.Context) {
 		return
 	}
 
-	urls, err := h.svc.GetAllUserUrl(user.(auth.UserResponse).ID.String())
+	urls, err := h.svc.GetAllUserUrl(user.(dto.UserResponse).ID.String())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
@@ -52,8 +52,12 @@ func (h *handler) GetAllUserUrl(c *gin.Context) {
 
 func (h *handler) GetOrigin(c *gin.Context) {
 	shortCode := c.Param("shortCode")
+	ipAddress := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
 
-	origin, err := h.svc.GetOrigin(shortCode)
+	log.Printf("ip: %s, agent: %s", ipAddress, userAgent)
+
+	origin, err := h.svc.GetOrigin(shortCode, ipAddress, userAgent)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
@@ -71,7 +75,7 @@ func (h *handler) DeleteUrl(c *gin.Context) {
 		return
 	}
 
-	url, err := h.svc.DeleteUrl(shortCode, userId.(auth.UserResponse).ID.String())
+	url, err := h.svc.DeleteUrl(shortCode, userId.(dto.UserResponse).ID.String())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return

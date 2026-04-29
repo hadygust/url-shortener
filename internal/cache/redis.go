@@ -6,8 +6,44 @@ import (
 	"log"
 	"time"
 
+	"github.com/hadygust/url-shortener/internal/dto"
+	"github.com/hadygust/url-shortener/internal/model"
 	"github.com/redis/go-redis/v9"
 )
+
+func (r *RedisCache) GetUrl(shortCode string) (*dto.UrlCache, error) {
+	key := "url:" + shortCode
+
+	val, err := r.Get(key)
+	if err != nil || val == nil {
+		return nil, err
+	}
+
+	bytes, _ := json.Marshal(val)
+
+	var result dto.UrlCache
+	if err := json.Unmarshal(bytes, &result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+func (r *RedisCache) SetUrl(url model.Url) error {
+	key := "url:" + url.ShortCode
+
+	data := dto.UrlCache{
+		ID:          url.ID.String(),
+		OriginalUrl: url.OriginalUrl,
+	}
+
+	ttl := time.Until(url.ExpiresAt.Time)
+	if ttl <= 0 {
+		return nil
+	}
+
+	return r.Set(key, data, ttl)
+}
 
 type RedisCache struct {
 	client *redis.Client
@@ -42,6 +78,7 @@ func (r *RedisCache) Get(key string) (any, error) {
 		return nil, err
 	}
 
+	log.Printf("Got from cache: %#v", data)
 	return data, nil
 }
 

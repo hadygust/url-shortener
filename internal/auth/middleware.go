@@ -37,6 +37,7 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 
 	ok := m.svc.CheckBlacklistToken(jti)
 	if !ok {
+		c.SetCookie("Authentication", "", -1, "", "", false, true)
 		c.AbortWithStatusJSON(http.StatusForbidden, "token invalid")
 		return
 	}
@@ -49,7 +50,6 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 	}
 
 	c.Set("user", user)
-
 	c.Next()
 }
 

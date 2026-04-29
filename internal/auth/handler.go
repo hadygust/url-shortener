@@ -6,11 +6,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/hadygust/url-shortener/internal/dto"
 	"github.com/hadygust/url-shortener/internal/env"
 )
 
 func (h *handler) RegisterUser(c *gin.Context) {
-	var register RegisterRequest
+	var register dto.RegisterRequest
 	err := c.BindJSON(&register)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, err.Error())
@@ -27,7 +28,7 @@ func (h *handler) RegisterUser(c *gin.Context) {
 }
 
 func (h *handler) LoginUser(c *gin.Context) {
-	var login LoginRequest
+	var login dto.LoginRequest
 	err := c.BindJSON(&login)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, err.Error())

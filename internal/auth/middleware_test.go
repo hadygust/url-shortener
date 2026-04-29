@@ -10,11 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/hadygust/url-shortener/internal/auth"
+	"github.com/hadygust/url-shortener/internal/dto"
 )
 
 type MockService struct {
 	CheckBlacklistTokenFunc func(string) bool
-	GetUserByIDFunc         func(string) (auth.UserResponse, error)
+	GetUserByIDFunc         func(string) (dto.UserResponse, error)
 	jwtSecret               string
 }
 
@@ -23,12 +24,12 @@ func (m *MockService) JwtSecret() string {
 	return m.jwtSecret
 }
 
-func (m *MockService) RegisterUser(req auth.RegisterRequest) (auth.UserResponse, error) {
-	return auth.UserResponse{}, nil
+func (m *MockService) RegisterUser(req dto.RegisterRequest) (dto.UserResponse, error) {
+	return dto.UserResponse{}, nil
 }
 
-func (m *MockService) LoginUser(req auth.LoginRequest) (auth.UserResponse, string, error) {
-	return auth.UserResponse{}, "", nil
+func (m *MockService) LoginUser(req dto.LoginRequest) (dto.UserResponse, string, error) {
+	return dto.UserResponse{}, "", nil
 }
 
 func (m *MockService) BlacklistToken(jti string, exp time.Time) error {
@@ -42,11 +43,11 @@ func (m *MockService) CheckBlacklistToken(jti string) bool {
 	return false
 }
 
-func (m *MockService) GetUserByID(id string) (auth.UserResponse, error) {
+func (m *MockService) GetUserByID(id string) (dto.UserResponse, error) {
 	// if m.GetUserByIDFunc != nil {
 	// 	return m.GetUserByIDFunc(id)
 	// }
-	return auth.UserResponse{}, nil
+	return dto.UserResponse{}, nil
 }
 
 func TestAuthMiddleware_NoCookie(t *testing.T) {

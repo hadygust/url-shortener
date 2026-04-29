@@ -7,6 +7,7 @@ import (
 	"github.com/hadygust/url-shortener/internal/auth"
 	"github.com/hadygust/url-shortener/internal/cache"
 	"github.com/hadygust/url-shortener/internal/env"
+	redirectlog "github.com/hadygust/url-shortener/internal/redirect_log"
 	"github.com/hadygust/url-shortener/internal/url"
 	"github.com/jmoiron/sqlx"
 )
@@ -30,8 +31,11 @@ func (app *application) mount() *gin.Engine {
 	auth.POST("/login", authMiddleware.RequireNonAuth, authHandler.LoginUser)
 	auth.POST("/logout", authMiddleware.RequireAuth, authHandler.Logout)
 
+	redirectLogRepo := redirectlog.NewRepository(app.db)
+	redirectLogService := redirectlog.NewService(redirectLogRepo)
+
 	urlRepo := url.NewRepository(app.db)
-	urlService := url.NewService(urlRepo, app.cache)
+	urlService := url.NewService(urlRepo, redirectLogService, app.cache)
 	urlHandler := url.NewHandler(urlService)
 
 	url := r.Group("/urls")

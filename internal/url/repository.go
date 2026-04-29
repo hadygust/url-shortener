@@ -1,8 +1,6 @@
 package url
 
 import (
-	"database/sql"
-	"errors"
 	"log"
 
 	"github.com/hadygust/url-shortener/internal/model"
@@ -12,8 +10,8 @@ import (
 type Repository interface {
 	CreateUrl(model.Url) (model.Url, error)
 	GetAllUserUrl(string) ([]model.Url, error)
-	GetOrigin(string) (string, error)
-	DeleteUrl(string) (model.Url, error)
+	GetUrlbyShortCode(shortCode string) (model.Url, error)
+	DeleteUrl(string, string) (model.Url, error)
 }
 
 func (repo *urlRepository) CreateUrl(url model.Url) (model.Url, error) {
@@ -47,7 +45,7 @@ func (repo *urlRepository) GetAllUserUrl(userId string) ([]model.Url, error) {
 	return urls, nil
 }
 
-func (repo *urlRepository) GetOrigin(shortCode string) (string, error) {
+func (repo *urlRepository) GetUrlbyShortCode(shortCode string) (model.Url, error) {
 
 	query := `
 		SELECT * 
@@ -58,27 +56,25 @@ func (repo *urlRepository) GetOrigin(shortCode string) (string, error) {
 	url := model.Url{}
 	err := repo.db.Get(&url, query, shortCode)
 	if err != nil {
-		return "", err
+		return model.Url{}, err
 	}
 
-	return url.OriginalUrl, nil
+	return url, nil
 }
 
-func (repo *urlRepository) DeleteUrl(shortCode string) (model.Url, error) {
+func (repo *urlRepository) DeleteUrl(shortCode string, userId string) (model.Url, error) {
 	query := `
 		DELETE FROM urls
-		WHERE short_code = $1
+		WHERE short_code = $1 AND user_id = $2
 		RETURNING *;
 	`
 
 	deletedUrl := model.Url{}
 
 	log.Println(shortCode)
-	err := repo.db.Get(&deletedUrl, query, shortCode)
+	err := repo.db.Get(&deletedUrl, query, shortCode, userId)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = errors.New("url didnt exists")
-		}
+
 		return model.Url{}, err
 	}
 

@@ -1,4 +1,4 @@
-package url
+package dto
 
 import (
 	"time"
@@ -18,6 +18,11 @@ type CreateUrlRequest struct {
 	OriginalUrl string     `json:"original_url" binding:"required,url"`
 	ShortCode   string     `json:"short_code"`
 	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
+}
+
+type UrlCache struct {
+	ID          string `json:"id"`
+	OriginalUrl string `json:"original_url"`
 }
 
 func NewUrlResponse(url model.Url) *UrlResponse {

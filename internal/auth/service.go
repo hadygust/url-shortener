@@ -8,15 +8,16 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/hadygust/url-shortener/internal/cache"
+	"github.com/hadygust/url-shortener/internal/dto"
 	"github.com/hadygust/url-shortener/internal/model"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type Service interface {
-	RegisterUser(RegisterRequest) (UserResponse, error)
-	LoginUser(LoginRequest) (UserResponse, string, error)
+	RegisterUser(dto.RegisterRequest) (dto.UserResponse, error)
+	LoginUser(dto.LoginRequest) (dto.UserResponse, string, error)
 	BlacklistToken(string, time.Time) error
-	GetUserByID(string) (UserResponse, error)
+	GetUserByID(string) (dto.UserResponse, error)
 	CheckBlacklistToken(string) bool
 	JwtSecret() string
 }
@@ -25,11 +26,11 @@ var (
 	ErrEmailUsed = errors.New("Email already registered")
 )
 
-func (s *userService) RegisterUser(register RegisterRequest) (UserResponse, error) {
+func (s *userService) RegisterUser(register dto.RegisterRequest) (dto.UserResponse, error) {
 	// Generate Password
 	password, err := bcrypt.GenerateFromPassword([]byte(register.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return UserResponse{}, err
+		return dto.UserResponse{}, err
 	}
 
 	// Create user model
@@ -42,23 +43,23 @@ func (s *userService) RegisterUser(register RegisterRequest) (UserResponse, erro
 	// Register new user
 	registeredUser, err := s.repo.registerUser(newUser)
 	if err != nil {
-		return UserResponse{}, err
+		return dto.UserResponse{}, err
 	}
 
-	userResp := NewUserResponse(registeredUser)
+	userResp := dto.NewUserResponse(registeredUser)
 
 	return *userResp, nil
 }
 
-func (s *userService) LoginUser(login LoginRequest) (UserResponse, string, error) {
+func (s *userService) LoginUser(login dto.LoginRequest) (dto.UserResponse, string, error) {
 	user, err := s.repo.loginUser(login)
 	if err != nil {
-		return UserResponse{}, "", err
+		return dto.UserResponse{}, "", err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(login.Password))
 	if err != nil {
-		return UserResponse{}, "", err
+		return dto.UserResponse{}, "", err
 	}
 
 	key := s.jwtSecret
@@ -71,10 +72,10 @@ func (s *userService) LoginUser(login LoginRequest) (UserResponse, string, error
 
 	tokenString, err := token.SignedString([]byte(key))
 	if err != nil {
-		return UserResponse{}, "", err
+		return dto.UserResponse{}, "", err
 	}
 
-	return *NewUserResponse(user), tokenString, nil
+	return *dto.NewUserResponse(user), tokenString, nil
 }
 
 func (s *userService) BlacklistToken(jti string, exp time.Time) error {
@@ -87,19 +88,21 @@ func (s *userService) CheckBlacklistToken(jti string) bool {
 	log.Printf("Black list: %#v err: %#v", test, err)
 
 	if test == nil {
-		return false
+		// Not found -> safe
+		return true
 	}
 
-	return true
+	// Found -> not safe
+	return false
 }
 
-func (s *userService) GetUserByID(id string) (UserResponse, error) {
+func (s *userService) GetUserByID(id string) (dto.UserResponse, error) {
 	user, err := s.repo.getUserByID(id)
 	if err != nil {
-		return UserResponse{}, err
+		return dto.UserResponse{}, err
 	}
 
-	return *NewUserResponse(user), nil
+	return *dto.NewUserResponse(user), nil
 }
 
 func (s *userService) JwtSecret() string {

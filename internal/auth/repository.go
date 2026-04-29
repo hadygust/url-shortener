@@ -1,13 +1,14 @@
 package auth
 
 import (
+	"github.com/hadygust/url-shortener/internal/dto"
 	"github.com/hadygust/url-shortener/internal/model"
 	"github.com/jmoiron/sqlx"
 )
 
 type Repository interface {
 	registerUser(model.User) (model.User, error)
-	loginUser(LoginRequest) (model.User, error)
+	loginUser(dto.LoginRequest) (model.User, error)
 	getUserByID(string) (model.User, error)
 	// blacklistToken(string, time.Time) error
 	// checkBlacklistToken(string) bool
@@ -30,7 +31,7 @@ func (repo *userRepository) registerUser(newUser model.User) (model.User, error)
 	return user, nil
 }
 
-func (repo *userRepository) loginUser(login LoginRequest) (model.User, error) {
+func (repo *userRepository) loginUser(login dto.LoginRequest) (model.User, error) {
 	user := model.User{}
 	err := repo.db.Get(&user, "SELECT * FROM users WHERE email=$1", login.Email)
 
