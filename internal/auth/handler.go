@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -19,6 +20,10 @@ func (h *handler) RegisterUser(c *gin.Context) {
 
 	user, err := h.svc.RegisterUser(register)
 	if err != nil {
+		if errors.Is(err, ErrEmailUsed) {
+			c.AbortWithStatusJSON(http.StatusConflict, err.Error())
+			return
+		}
 		c.AbortWithStatusJSON(http.StatusInternalServerError, err.Error())
 		return
 	}

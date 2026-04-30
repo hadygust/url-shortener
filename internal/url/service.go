@@ -81,6 +81,9 @@ func (s *urlService) GetOrigin(shortCode string, ipAddress string, userAgent str
 
 	// Cache failed -> fetch db
 	url, err := s.repo.GetUrlbyShortCode(shortCode)
+	if err != nil {
+		return "", err
+	}
 	if time.Until(url.ExpiresAt.Time) <= 0 {
 		return "", errors.New("url expired")
 	}
@@ -102,7 +105,7 @@ func (s *urlService) DeleteUrl(shortCode string, userId string) (dto.UrlResponse
 		return dto.UrlResponse{}, err
 	}
 
-	_ = s.cache.Delete("shortCode:" + shortCode)
+	_ = s.cache.Delete("url:" + shortCode)
 
 	res := *dto.NewUrlResponse(url)
 

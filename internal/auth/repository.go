@@ -1,9 +1,13 @@
 package auth
 
 import (
+	"errors"
+	"log"
+
 	"github.com/hadygust/url-shortener/internal/dto"
 	"github.com/hadygust/url-shortener/internal/model"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 type Repository interface {
@@ -25,6 +29,14 @@ func (repo *userRepository) RegisterUser(newUser model.User) (model.User, error)
 	err := repo.db.Get(&user, query, newUser.ID, newUser.Email, newUser.Password)
 
 	if err != nil {
+		var pqErr *pq.Error
+		log.Println("error catched")
+		if errors.As(err, &pqErr) {
+			log.Println("error is pqerr")
+			if pqErr.Code == "23505" {
+				err = ErrEmailUsed
+			}
+		}
 		return model.User{}, err
 	}
 
