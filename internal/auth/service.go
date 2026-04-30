@@ -41,7 +41,7 @@ func (s *userService) RegisterUser(register dto.RegisterRequest) (dto.UserRespon
 	}
 
 	// Register new user
-	registeredUser, err := s.repo.registerUser(newUser)
+	registeredUser, err := s.repo.RegisterUser(newUser)
 	if err != nil {
 		return dto.UserResponse{}, err
 	}
@@ -52,7 +52,7 @@ func (s *userService) RegisterUser(register dto.RegisterRequest) (dto.UserRespon
 }
 
 func (s *userService) LoginUser(login dto.LoginRequest) (dto.UserResponse, string, error) {
-	user, err := s.repo.loginUser(login)
+	user, err := s.repo.LoginUser(login)
 	if err != nil {
 		return dto.UserResponse{}, "", err
 	}
@@ -97,7 +97,7 @@ func (s *userService) CheckBlacklistToken(jti string) bool {
 }
 
 func (s *userService) GetUserByID(id string) (dto.UserResponse, error) {
-	user, err := s.repo.getUserByID(id)
+	user, err := s.repo.GetUserByID(id)
 	if err != nil {
 		return dto.UserResponse{}, err
 	}

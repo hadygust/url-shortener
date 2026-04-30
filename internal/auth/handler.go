@@ -7,7 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/hadygust/url-shortener/internal/dto"
-	"github.com/hadygust/url-shortener/internal/env"
 )
 
 func (h *handler) RegisterUser(c *gin.Context) {
@@ -54,11 +53,10 @@ func (h *handler) Logout(c *gin.Context) {
 	}
 
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (any, error) {
-		secret, err := env.LoadEnv("JWT_SECRET")
 		if err != nil {
 			return nil, err
 		}
-		return []byte(secret), nil
+		return []byte(h.svc.JwtSecret()), nil
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 
 	if err != nil {

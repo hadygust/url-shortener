@@ -7,14 +7,14 @@ import (
 )
 
 type Repository interface {
-	registerUser(model.User) (model.User, error)
-	loginUser(dto.LoginRequest) (model.User, error)
-	getUserByID(string) (model.User, error)
+	RegisterUser(model.User) (model.User, error)
+	LoginUser(dto.LoginRequest) (model.User, error)
+	GetUserByID(string) (model.User, error)
 	// blacklistToken(string, time.Time) error
 	// checkBlacklistToken(string) bool
 }
 
-func (repo *userRepository) registerUser(newUser model.User) (model.User, error) {
+func (repo *userRepository) RegisterUser(newUser model.User) (model.User, error) {
 
 	query := `
 		INSERT INTO users (id, email, password)
@@ -31,7 +31,7 @@ func (repo *userRepository) registerUser(newUser model.User) (model.User, error)
 	return user, nil
 }
 
-func (repo *userRepository) loginUser(login dto.LoginRequest) (model.User, error) {
+func (repo *userRepository) LoginUser(login dto.LoginRequest) (model.User, error) {
 	user := model.User{}
 	err := repo.db.Get(&user, "SELECT * FROM users WHERE email=$1", login.Email)
 
@@ -42,7 +42,7 @@ func (repo *userRepository) loginUser(login dto.LoginRequest) (model.User, error
 	return user, nil
 }
 
-func (repo *userRepository) getUserByID(id string) (model.User, error) {
+func (repo *userRepository) GetUserByID(id string) (model.User, error) {
 	user := model.User{}
 	err := repo.db.Get(&user, "SELECT * FROM users WHERE id=$1", id)
 
