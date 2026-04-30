@@ -1,4 +1,4 @@
-package url
+package url_test
 
 import (
 	"errors"
@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/hadygust/url-shortener/internal/cache"
 	"github.com/hadygust/url-shortener/internal/dto"
 	"github.com/hadygust/url-shortener/internal/model"
+	"github.com/hadygust/url-shortener/internal/url"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -59,10 +61,6 @@ func (m *MockRedirectLogService) CreateRedirectLog(urlId string, ipAddress strin
 	return nil
 }
 
-func (m *MockRedirectLogService) GetAllRedirectLogs(urlId string) ([]dto.RedirectLogResponse, error) {
-	return []dto.RedirectLogResponse{}, nil
-}
-
 // MockCache for URL service testing
 type MockUrlCache struct {
 	GetUrlFunc func(string) (*dto.UrlCache, error)
@@ -70,6 +68,26 @@ type MockUrlCache struct {
 	DeleteFunc func(string) error
 	GetFunc    func(string) (any, error)
 	SetFunc    func(string, any, time.Duration) error
+}
+
+// GetIPRateLimit implements [cache.Cache].
+func (m *MockUrlCache) GetIPRateLimit(ip string) (*cache.RequestCounter, error) {
+	panic("unimplemented")
+}
+
+// GetRedirectLimit implements [cache.Cache].
+func (m *MockUrlCache) GetRedirectLimit(urlID string) (*cache.RequestCounter, error) {
+	panic("unimplemented")
+}
+
+// SetIPRateLimit implements [cache.Cache].
+func (m *MockUrlCache) SetIPRateLimit(ip string, counter *cache.RequestCounter, ttl time.Duration) error {
+	panic("unimplemented")
+}
+
+// SetRedirectLimit implements [cache.Cache].
+func (m *MockUrlCache) SetRedirectLimit(urlID string, counter *cache.RequestCounter, ttl time.Duration) error {
+	panic("unimplemented")
 }
 
 func (m *MockUrlCache) GetUrl(shortCode string) (*dto.UrlCache, error) {
@@ -107,19 +125,19 @@ func (m *MockUrlCache) Set(key string, value any, ttl time.Duration) error {
 	return nil
 }
 
-func (m *MockUrlCache) GetUrlPostLimit(userID string) (*interface{}, error) {
+func (m *MockUrlCache) GetUrlPostLimit(userID string) (*cache.RequestCounter, error) {
 	return nil, nil
 }
 
-func (m *MockUrlCache) SetUrlPostLimit(userID string, counter *interface{}, ttl time.Duration) error {
+func (m *MockUrlCache) SetUrlPostLimit(userID string, counter *cache.RequestCounter, ttl time.Duration) error {
 	return nil
 }
 
-func (m *MockUrlCache) GetUrlGetLimit(key string) (*interface{}, error) {
+func (m *MockUrlCache) GetUrlGetLimit(key string) (*cache.RequestCounter, error) {
 	return nil, nil
 }
 
-func (m *MockUrlCache) SetUrlGetLimit(key string, counter *interface{}, ttl time.Duration) error {
+func (m *MockUrlCache) SetUrlGetLimit(key string, counter *cache.RequestCounter, ttl time.Duration) error {
 	return nil
 }
 
@@ -138,11 +156,7 @@ func TestCreateUrl_Success(t *testing.T) {
 	mockRedirectLog := &MockRedirectLogService{}
 	mockCache := &MockUrlCache{}
 
-	service := &urlService{
-		repo:        mockRepo,
-		redirectLog: mockRedirectLog,
-		cache:       mockCache,
-	}
+	service := url.NewService(mockRepo, mockRedirectLog, mockCache)
 
 	req := dto.CreateUrlRequest{
 		ShortCode:   shortCode,
@@ -170,11 +184,7 @@ func TestCreateUrl_InvalidUserId(t *testing.T) {
 	mockRedirectLog := &MockRedirectLogService{}
 	mockCache := &MockUrlCache{}
 
-	service := &urlService{
-		repo:        mockRepo,
-		redirectLog: mockRedirectLog,
-		cache:       mockCache,
-	}
+	service := url.NewService(mockRepo, mockRedirectLog, mockCache)
 
 	req := dto.CreateUrlRequest{
 		ShortCode:   "abc123",
@@ -203,11 +213,7 @@ func TestCreateUrl_RepositoryError(t *testing.T) {
 	mockRedirectLog := &MockRedirectLogService{}
 	mockCache := &MockUrlCache{}
 
-	service := &urlService{
-		repo:        mockRepo,
-		redirectLog: mockRedirectLog,
-		cache:       mockCache,
-	}
+	service := url.NewService(mockRepo, mockRedirectLog, mockCache)
 
 	req := dto.CreateUrlRequest{
 		ShortCode:   "abc123",
@@ -234,7 +240,7 @@ func TestGetAllUserUrl_Success(t *testing.T) {
 			UserId:      userId,
 			ShortCode:   "abc123",
 			OriginalUrl: "https://example.com",
-			CreatedAt:   pgtype.Timestamp{Time: time.Now(), Valid: true},
+			CreatedAt:   pgtype.Timestamptz{Time: time.Now(), Valid: true},
 			ExpiresAt:   pgtype.Timestamptz{Time: time.Now().Add(24 * time.Hour), Valid: true},
 		},
 	}
@@ -247,11 +253,7 @@ func TestGetAllUserUrl_Success(t *testing.T) {
 	mockRedirectLog := &MockRedirectLogService{}
 	mockCache := &MockUrlCache{}
 
-	service := &urlService{
-		repo:        mockRepo,
-		redirectLog: mockRedirectLog,
-		cache:       mockCache,
-	}
+	service := url.NewService(mockRepo, mockRedirectLog, mockCache)
 
 	// Act
 	urls, err := service.GetAllUserUrl(userIdStr)
@@ -286,11 +288,7 @@ func TestGetOrigin_FromCache(t *testing.T) {
 		},
 	}
 
-	service := &urlService{
-		repo:        mockRepo,
-		redirectLog: mockRedirectLog,
-		cache:       mockCache,
-	}
+	service := url.NewService(mockRepo, mockRedirectLog, mockCache)
 
 	// Act
 	origin, err := service.GetOrigin(shortCode, "127.0.0.1", "Mozilla")
@@ -317,7 +315,7 @@ func TestGetOrigin_FromDatabase(t *testing.T) {
 				UserId:      userId,
 				ShortCode:   code,
 				OriginalUrl: originalUrl,
-				CreatedAt:   pgtype.Timestamp{Time: time.Now(), Valid: true},
+				CreatedAt:   pgtype.Timestamptz{Time: time.Now(), Valid: true},
 				ExpiresAt:   pgtype.Timestamptz{Time: time.Now().Add(24 * time.Hour), Valid: true},
 			}, nil
 		},
@@ -336,11 +334,7 @@ func TestGetOrigin_FromDatabase(t *testing.T) {
 		},
 	}
 
-	service := &urlService{
-		repo:        mockRepo,
-		redirectLog: mockRedirectLog,
-		cache:       mockCache,
-	}
+	service := url.NewService(mockRepo, mockRedirectLog, mockCache)
 
 	// Act
 	origin, err := service.GetOrigin(shortCode, "127.0.0.1", "Mozilla")
@@ -366,7 +360,7 @@ func TestGetOrigin_ExpiredUrl(t *testing.T) {
 				UserId:      userId,
 				ShortCode:   code,
 				OriginalUrl: "https://example.com",
-				CreatedAt:   pgtype.Timestamp{Time: time.Now().Add(-48 * time.Hour), Valid: true},
+				CreatedAt:   pgtype.Timestamptz{Time: time.Now().Add(-48 * time.Hour), Valid: true},
 				ExpiresAt:   pgtype.Timestamptz{Time: time.Now().Add(-24 * time.Hour), Valid: true},
 			}, nil
 		},
@@ -378,11 +372,7 @@ func TestGetOrigin_ExpiredUrl(t *testing.T) {
 		},
 	}
 
-	service := &urlService{
-		repo:        mockRepo,
-		redirectLog: mockRedirectLog,
-		cache:       mockCache,
-	}
+	service := url.NewService(mockRepo, mockRedirectLog, mockCache)
 
 	// Act
 	_, err := service.GetOrigin(shortCode, "127.0.0.1", "Mozilla")
@@ -407,7 +397,7 @@ func TestDeleteUrl_Success(t *testing.T) {
 		UserId:      userId,
 		ShortCode:   shortCode,
 		OriginalUrl: "https://example.com",
-		CreatedAt:   pgtype.Timestamp{Time: time.Now(), Valid: true},
+		CreatedAt:   pgtype.Timestamptz{Time: time.Now(), Valid: true},
 		ExpiresAt:   pgtype.Timestamptz{Time: time.Now().Add(24 * time.Hour), Valid: true},
 	}
 
@@ -423,11 +413,7 @@ func TestDeleteUrl_Success(t *testing.T) {
 		},
 	}
 
-	service := &urlService{
-		repo:        mockRepo,
-		redirectLog: mockRedirectLog,
-		cache:       mockCache,
-	}
+	service := url.NewService(mockRepo, mockRedirectLog, mockCache)
 
 	// Act
 	resp, err := service.DeleteUrl(shortCode, userIdStr)
@@ -455,11 +441,7 @@ func TestDeleteUrl_NotFound(t *testing.T) {
 	mockRedirectLog := &MockRedirectLogService{}
 	mockCache := &MockUrlCache{}
 
-	service := &urlService{
-		repo:        mockRepo,
-		redirectLog: mockRedirectLog,
-		cache:       mockCache,
-	}
+	service := url.NewService(mockRepo, mockRedirectLog, mockCache)
 
 	// Act
 	_, err := service.DeleteUrl(shortCode, userIdStr)

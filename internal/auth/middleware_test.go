@@ -106,7 +106,12 @@ func TestAuthMiddleware_BlacklistToken(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 
-	middleware := auth.NewMiddleware(&MockService{jwtSecret: "test-secret"})
+	middleware := auth.NewMiddleware(&MockService{
+		jwtSecret: "test-secret",
+		CheckBlacklistTokenFunc: func(s string) bool {
+			return false
+		},
+	})
 
 	router.GET("/blacklist", middleware.RequireAuth, func(ctx *gin.Context) {
 		ctx.Status(http.StatusOK)
