@@ -6,6 +6,7 @@ import (
 
 	"github.com/hadygust/url-shortener/internal/cache"
 	"github.com/hadygust/url-shortener/internal/env"
+	"github.com/hadygust/url-shortener/internal/ratelimit"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -38,10 +39,14 @@ func main() {
 
 	cache := cache.NewRedisCache("localhost:6379")
 
+	// Create rate limiter with cache dependency
+	rateLimiter := ratelimit.NewRateLimiter(cache)
+
 	app := application{
-		cfg:   cfg,
-		db:    db,
-		cache: cache,
+		cfg:         cfg,
+		db:          db,
+		cache:       cache,
+		rateLimiter: rateLimiter,
 	}
 
 	err = app.run(app.mount())

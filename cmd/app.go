@@ -2,11 +2,13 @@ package main
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hadygust/url-shortener/internal/auth"
 	"github.com/hadygust/url-shortener/internal/cache"
 	"github.com/hadygust/url-shortener/internal/env"
+	"github.com/hadygust/url-shortener/internal/ratelimit"
 	redirectlog "github.com/hadygust/url-shortener/internal/redirect_log"
 	"github.com/hadygust/url-shortener/internal/url"
 	"github.com/jmoiron/sqlx"
@@ -39,11 +41,11 @@ func (app *application) mount() *gin.Engine {
 	urlHandler := url.NewHandler(urlService)
 
 	url := r.Group("/urls")
-	url.POST("/", authMiddleware.RequireAuth, urlHandler.CreateUrl)
+	url.POST("/", authMiddleware.RequireAuth, app.rateLimiter.UserRateLimitMiddleware(10, time.Minute), urlHandler.CreateUrl)
 	url.GET("/", authMiddleware.RequireAuth, urlHandler.GetAllUserUrl)
 	url.DELETE("/:shortCode", authMiddleware.RequireAuth, urlHandler.DeleteUrl)
 
-	r.GET("/:shortCode", urlHandler.GetOrigin)
+	r.GET("/:shortCode", app.rateLimiter.IPRateLimitMiddleware(60, time.Minute), urlHandler.GetOrigin)
 
 	r.GET("/", authMiddleware.RequireAuth, func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, "Helo Url")
@@ -67,7 +69,8 @@ type dbConfig struct {
 }
 
 type application struct {
-	cfg   Config
-	db    *sqlx.DB
-	cache cache.Cache
+	cfg         Config
+	db          *sqlx.DB
+	cache       cache.Cache
+	rateLimiter *ratelimit.RateLimiter
 }
