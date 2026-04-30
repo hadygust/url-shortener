@@ -28,12 +28,18 @@ func (s *urlService) CreateUrl(reqUrl dto.CreateUrlRequest, userId string) (dto.
 		return dto.UrlResponse{}, err
 	}
 
+	exp := reqUrl.ExpiresAt
+	if exp == nil {
+		time := time.Now().Add(time.Hour * 24)
+		exp = &time
+	}
+
 	url := model.Url{
 		ID:          uuid.New(),
 		UserId:      userUuid,
 		ShortCode:   reqUrl.ShortCode,
 		OriginalUrl: reqUrl.OriginalUrl,
-		ExpiresAt:   pgtype.Timestamptz{Time: time.Now().Add(time.Hour * 24), Valid: true},
+		ExpiresAt:   pgtype.Timestamptz{Time: *exp, Valid: true},
 	}
 
 	resUrl, err := s.repo.CreateUrl(url)

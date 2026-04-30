@@ -18,12 +18,12 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	host := env.LoadEnvFallback("POSTGRES_HOST", "localhost")
-	port := env.LoadEnvFallback("POSTGRES_PORT", "5432")
-	user := env.LoadEnvFallback("POSTGRES_USER", "postgres")
+	pgHost := env.LoadEnvFallback("POSTGRES_HOST", "localhost")
+	pgPort := env.LoadEnvFallback("POSTGRES_PORT", "5432")
+	pgUser := env.LoadEnvFallback("POSTGRES_USER", "postgres")
 	dbname := env.LoadEnvFallback("POSTGRES_DB", "url_short")
-	password := env.LoadEnvFallback("POSTGRES_PW", "postgres")
-	dsn := fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=disable", host, port, dbname, user, password)
+	pgPassword := env.LoadEnvFallback("POSTGRES_PW", "postgres")
+	dsn := fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=disable", pgHost, pgPort, dbname, pgUser, pgPassword)
 
 	cfg := Config{
 		addr: ":8080",
@@ -37,7 +37,9 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	cache := cache.NewRedisCache("localhost:6379")
+	redisHost := env.LoadEnvFallback("REDIS_HOST", "localhost")
+	redisPort := env.LoadEnvFallback("REDIS_HOST", "6379")
+	cache := cache.NewRedisCache(redisHost + ":" + redisPort)
 
 	// Create rate limiter with cache dependency
 	rateLimiter := ratelimit.NewRateLimiter(cache)
