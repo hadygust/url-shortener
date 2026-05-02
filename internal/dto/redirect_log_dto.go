@@ -1,10 +1,10 @@
 package dto
 
 type UrlStatsResponse struct {
-	ShortCode     string          `json:"short_code"`
-	TotalClicks   int             `json:"total_clicks"`
-	ClicksPerDay  []DailyClicks   `json:"clicks_per_day"`
-	TopUserAgents []TopUserAgents `json:"top_user_agents"`
+	ShortCode     string        `json:"short_code"`
+	TotalClicks   int           `json:"total_clicks"`
+	ClicksPerDay  []DailyClicks `json:"clicks_per_day"`
+	TopUserAgents []UserAgent   `json:"top_user_agents"`
 }
 
 type DailyClicks struct {
@@ -12,7 +12,7 @@ type DailyClicks struct {
 	Count int    `json:"count"`
 }
 
-type TopUserAgents struct {
+type UserAgent struct {
 	Name  string `json:"name"`
 	Count int    `json:"count"`
 }

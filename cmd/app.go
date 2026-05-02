@@ -40,10 +40,11 @@ func (app *application) mount() *gin.Engine {
 	urlService := url.NewService(urlRepo, redirectLogService, app.cache)
 	urlHandler := url.NewHandler(urlService)
 
-	url := r.Group("/urls")
-	url.POST("/", authMiddleware.RequireAuth, app.rateLimiter.UserRateLimitMiddleware(10, time.Minute), urlHandler.CreateUrl)
-	url.GET("/", authMiddleware.RequireAuth, urlHandler.GetAllUserUrl)
-	url.DELETE("/:shortCode", authMiddleware.RequireAuth, urlHandler.DeleteUrl)
+	url := r.Group("/urls", authMiddleware.RequireAuth)
+	url.POST("/", app.rateLimiter.UserRateLimitMiddleware(10, time.Minute), urlHandler.CreateUrl)
+	url.GET("/", urlHandler.GetAllUserUrl)
+	url.DELETE("/:shortCode", urlHandler.DeleteUrl)
+	url.GET("/:shortCode/stats", urlHandler.GetUrlStats)
 
 	r.GET("/:shortCode", app.rateLimiter.IPRateLimitMiddleware(60, time.Minute), urlHandler.GetOrigin)
 

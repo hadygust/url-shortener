@@ -84,6 +84,17 @@ func (h *handler) DeleteUrl(c *gin.Context) {
 	c.JSON(http.StatusOK, url)
 }
 
+func (h *handler) GetUrlStats(c *gin.Context) {
+	shortCode := c.Param("shortCode")
+
+	stats, err := h.svc.GetStats(shortCode)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	c.JSON(http.StatusOK, stats)
+}
+
 type handler struct {
 	svc Service
 }

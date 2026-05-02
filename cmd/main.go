@@ -37,9 +37,8 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	redisHost := env.LoadEnvFallback("REDIS_HOST", "localhost")
-	redisPort := env.LoadEnvFallback("REDIS_HOST", "6379")
-	cache := cache.NewRedisCache(redisHost + ":" + redisPort)
+	redisAddr := env.LoadEnvFallback("REDIS_ADDR", "localhost:6379")
+	cache := cache.NewRedisCache(redisAddr)
 
 	// Create rate limiter with cache dependency
 	rateLimiter := ratelimit.NewRateLimiter(cache)

@@ -90,3 +90,26 @@ func NewRepository(db *sqlx.DB) *urlRepository {
 		db: db,
 	}
 }
+
+/*
+INSERT INTO redirect_logs (id, url_id, ip_address, user_agent, accessed_at)
+SELECT
+    gen_random_uuid(),
+    '8fd023fc-efe3-4093-a647-38e0e0de22dc',
+
+    -- repeatable IP patterns (not fully random)
+    '192.168.' || (gs % 50) || '.' || (gs % 255),
+
+    -- weighted user agent distribution (realistic dominance)
+    CASE
+        WHEN random() < 0.4 THEN 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        WHEN random() < 0.7 THEN 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)'
+        WHEN random() < 0.9 THEN 'Mozilla/5.0 (Linux; Android 10)'
+        ELSE 'curl/7.68.0'
+    END,
+
+    -- skewed toward recent (more realistic traffic pattern)
+    NOW() - (random()^2 * interval '14 days')
+
+FROM generate_series(1, 1000000) AS gs;
+*/

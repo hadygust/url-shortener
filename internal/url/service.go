@@ -19,6 +19,7 @@ type Service interface {
 	GetAllUserUrl(string) ([]dto.UrlResponse, error)
 	GetOrigin(shortCode string, ipAddress string, userAgent string) (string, error)
 	DeleteUrl(string, string) (dto.UrlResponse, error)
+	GetStats(shortCode string) (dto.UrlStatsResponse, error)
 }
 
 func (s *urlService) CreateUrl(reqUrl dto.CreateUrlRequest, userId string) (dto.UrlResponse, error) {
@@ -116,6 +117,59 @@ type urlService struct {
 	repo        Repository
 	redirectLog redirectlog.Service
 	cache       cache.Cache
+}
+
+func (s *urlService) GetStats(shortCode string) (dto.UrlStatsResponse, error) {
+
+	return s.redirectLog.GetStats(shortCode)
+
+	// var (
+	// 	totalClick  int
+	// 	dailyClicks []dto.DailyClicks
+	// 	topAgents   []dto.UserAgent
+
+	// 	err1 error
+	// 	err2 error
+	// 	err3 error
+	// )
+
+	// var wg sync.WaitGroup
+	// wg.Add(3)
+
+	// go func() {
+	// 	defer wg.Done()
+	// 	totalClick, err1 = s.redirectLog.GetTotalClicks(shortCode)
+	// }()
+
+	// go func() {
+	// 	defer wg.Done()
+	// 	dailyClicks, err2 = s.redirectLog.GetUrlDailyClicks(shortCode)
+	// }()
+
+	// go func() {
+	// 	defer wg.Done()
+	// 	topAgents, err3 = s.redirectLog.GetTopUserAgents(shortCode)
+	// }()
+
+	// wg.Wait()
+
+	// // prioritize returning the first error encountered
+	// if err1 != nil {
+	// 	return dto.UrlStatsResponse{}, err1
+	// }
+	// if err2 != nil {
+	// 	return dto.UrlStatsResponse{}, err2
+	// }
+	// if err3 != nil {
+	// 	return dto.UrlStatsResponse{}, err3
+	// }
+
+	// return dto.UrlStatsResponse{
+	// 	ShortCode:     shortCode,
+	// 	TotalClicks:   totalClick,
+	// 	ClicksPerDay:  dailyClicks,
+	// 	TopUserAgents: topAgents,
+	// }, nil
 }
 
 func NewService(repo Repository, redirectLog redirectlog.Service, cache cache.Cache) *urlService {
