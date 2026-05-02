@@ -54,6 +54,26 @@ type MockRedirectLogService struct {
 	CreateRedirectLogFunc func(string, string, string) error
 }
 
+// GetStats implements [redirectlog.Service].
+func (m *MockRedirectLogService) GetStats(shortCode string) (dto.UrlStatsResponse, error) {
+	panic("unimplemented")
+}
+
+// GetTopUserAgents implements [redirectlog.Service].
+func (m *MockRedirectLogService) GetTopUserAgents(shortCode string) ([]dto.UserAgent, error) {
+	panic("unimplemented")
+}
+
+// GetTotalClicks implements [redirectlog.Service].
+func (m *MockRedirectLogService) GetTotalClicks(shortCode string) (int, error) {
+	panic("unimplemented")
+}
+
+// GetUrlDailyClicks implements [redirectlog.Service].
+func (m *MockRedirectLogService) GetUrlDailyClicks(shortCode string) ([]dto.DailyClicks, error) {
+	panic("unimplemented")
+}
+
 func (m *MockRedirectLogService) CreateRedirectLog(urlId string, ipAddress string, userAgent string) error {
 	if m.CreateRedirectLogFunc != nil {
 		return m.CreateRedirectLogFunc(urlId, ipAddress, userAgent)
