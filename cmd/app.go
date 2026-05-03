@@ -40,7 +40,7 @@ func (app *application) mount() *gin.Engine {
 	urlService := url.NewService(urlRepo, redirectLogService, app.cache)
 	urlHandler := url.NewHandler(urlService)
 
-	url := r.Group("/urls", authMiddleware.RequireAuth)
+	url := r.Group("/url", authMiddleware.RequireAuth)
 	url.POST("/", app.rateLimiter.UserRateLimitMiddleware(10, time.Minute), urlHandler.CreateUrl)
 	url.GET("/", urlHandler.GetAllUserUrl)
 	url.DELETE("/:shortCode", urlHandler.DeleteUrl)

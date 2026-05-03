@@ -14,7 +14,6 @@ A production-ready **URL shortening service** built with Go, featuring JWT authe
 | Auth | JWT (`golang-jwt/jwt`) |
 | Cache | Redis 7 (`go-redis/v9`) |
 | Database | PostgreSQL (`pgx/v5`, `sqlx`) |
-| Storage | MongoDB (`mongo-driver/v2`) |
 | Config | `godotenv` |
 | IDs | UUID (`google/uuid`) |
 | CI/CD | GitHub Actions |
@@ -39,15 +38,21 @@ A production-ready **URL shortening service** built with Go, featuring JWT authe
 
 ```
 url-shortener/
-├── .github/workflows/    # GitHub Actions CI pipeline
-├── cmd/                  # Application entry point
-├── internal/             # Core business logic
-│   ├── handler/          # HTTP handlers
-│   ├── repository/       # DB & cache access layer
-│   └── service/          # Business logic layer
-├── docker-compose.yaml   # Full stack Docker setup
-├── go.mod
-└── go.sum
+├── .github/workflows/        # CI pipeline (GitHub Actions)
+├── cmd/                      # Application entry point (main.go, app setup)
+├── internal/                 # Core business logic
+│   ├── auth/                 # Authentication module (handler, service, repo, middleware)
+│   ├── url/                  # URL shortening core logic (handler, service, repo)
+│   ├── redirect_log/         # Redirect tracking logic (service, repository)
+│   ├── rate_limiter/         # Rate limiting middleware & logic
+│   ├── cache/                # Redis cache abstraction
+│   ├── dto/                  # Data Transfer Objects (request/response schemas)
+│   ├── model/                # Database models / entities
+│   ├── env/                  # Environment variable loading & config
+│   └── migration/            # Database migrations (Goose + SQL files)
+├── docker-compose.yaml       # Multi-service setup (Postgres, Redis, Redis Commander)
+├── go.mod                   
+├── go.sum                    
 ```
 
 ---
@@ -71,12 +76,23 @@ cd url-shortener
 Create a `.env` file in the root:
 
 ```env
-POSTGRES_USER=postgres
-POSTGRES_PW=yourpassword
-POSTGRES_DB=urlshortener
+# PostgreSQL Configuration
+POSTGRES_HOST=your_postgres_host
 POSTGRES_PORT=5432
+POSTGRES_USER=your_postgres_user
+POSTGRES_PW=your_postgres_password
+POSTGRES_DB=your_database_name
 
+# JWT Configuration
 JWT_SECRET=your_jwt_secret
+
+# Goose Migration
+GOOSE_DRIVER=postgres
+GOOSE_DBSTRING=postgres://user:password@host:port/dbname
+GOOSE_MIGRATION_DIR=./internal/migration
+
+# Redis Configuration
+REDIS_ADDR=your_redis_host:6379
 ```
 
 ### 3. Start the stack
@@ -90,7 +106,7 @@ This starts PostgreSQL, Redis, and Redis Commander (UI at `http://localhost:8081
 ### 4. Run the application
 
 ```bash
-go run cmd/main.go
+go run ./cmd/*
 ```
 
 ---
@@ -99,10 +115,10 @@ go run cmd/main.go
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/shorten` | Create a short URL (auth required) |
-| `GET` | `/:code` | Redirect to original URL |
-| `DELETE` | `/:code` | Delete a short URL (auth required) |
-| `POST` | `/login` | Obtain a JWT token |
+| `POST` | `/url` | Create a short URL (auth required) |
+| `GET` | `/:shortCode` | Redirect to original URL with given short code |
+| `DELETE` | `/url/:shortCode` | Delete a short URL (auth required) |
+| `POST` | `/auth/login` | Obtain a JWT token |
 
 ---
 
