@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -24,7 +24,7 @@ func (m *AuthMiddleware) RequireAuth(c *gin.Context) {
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 
 	if err != nil {
-		log.Println("Parse failed")
+		slog.Error("Parse failed")
 		c.SetCookie("Authentication", "", -1, "", "", false, true)
 		c.AbortWithStatusJSON(http.StatusUnauthorized, err.Error())
 		return
