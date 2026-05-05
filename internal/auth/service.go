@@ -2,7 +2,7 @@ package auth
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -85,7 +85,7 @@ func (s *userService) BlacklistToken(jti string, exp time.Time) error {
 func (s *userService) CheckBlacklistToken(jti string) bool {
 	test, err := s.cache.Get("blacklist:" + jti)
 
-	log.Printf("Black list: %#v err: %#v", test, err)
+	slog.Info("Black list: %#v err: %#v", test, err)
 
 	if test == nil {
 		// Not found -> safe

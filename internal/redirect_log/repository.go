@@ -2,8 +2,7 @@ package redirectlog
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/hadygust/url-shortener/internal/dto"
 	"github.com/hadygust/url-shortener/internal/model"
@@ -27,23 +26,12 @@ func (repo *rlogRepository) CreateRedirectLog(rlog model.RedirectLog) error {
 
 	_, err := repo.db.Exec(query, rlog.ID, rlog.UrlId, rlog.IpAddress, rlog.UserAgent)
 	if err != nil {
-		log.Printf("rlog insertion failed: %s", err.Error())
+		slog.Error("rlog insertion failed", "error", err.Error())
 		return err
 	}
 
-	log.Println("rlog insertion success")
+	slog.Info("rlog insertion success")
 	return nil
-}
-
-func (repo *rlogRepository) GetUrlClickCount(urlId string) (int, error) {
-	query := `
-		SELECT COUNT(*)
-		FROM redirect_logs
-		WHERE url_id = '8fd023fc-efe3-4093-a647-38e0e0de22dc';
-	`
-
-	fmt.Println(query)
-	return 0, nil
 }
 
 func (repo *rlogRepository) GetUrlDailyClicks(shortCode string) ([]dto.DailyClicks, error) {

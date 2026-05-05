@@ -3,7 +3,8 @@ package url
 import (
 	"database/sql"
 	"errors"
-	"log"
+	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -25,7 +26,7 @@ type Service interface {
 func (s *urlService) CreateUrl(reqUrl dto.CreateUrlRequest, userId string) (dto.UrlResponse, error) {
 	userUuid, err := uuid.Parse(userId)
 	if err != nil {
-		log.Println("user id parsing fails " + err.Error())
+		slog.Error("user id parsing fails", "error", err.Error())
 		return dto.UrlResponse{}, err
 	}
 
@@ -45,7 +46,6 @@ func (s *urlService) CreateUrl(reqUrl dto.CreateUrlRequest, userId string) (dto.
 
 	resUrl, err := s.repo.CreateUrl(url)
 	if err != nil {
-		log.Println("Repo fails " + err.Error())
 		return dto.UrlResponse{}, err
 	}
 
@@ -74,7 +74,7 @@ func (s *urlService) GetOrigin(shortCode string, ipAddress string, userAgent str
 	// Check cache
 	urlCache, err := s.cache.GetUrl(shortCode)
 	if err == nil && urlCache != nil {
-		log.Println("Got from cache")
+		slog.Info("Got url from cache")
 
 		s.redirectLog.CreateRedirectLog(urlCache.ID, ipAddress, userAgent)
 		return urlCache.OriginalUrl, err
@@ -121,55 +121,55 @@ type urlService struct {
 
 func (s *urlService) GetStats(shortCode string) (dto.UrlStatsResponse, error) {
 
-	return s.redirectLog.GetStats(shortCode)
+	// return s.redirectLog.GetStats(shortCode)
 
-	// var (
-	// 	totalClick  int
-	// 	dailyClicks []dto.DailyClicks
-	// 	topAgents   []dto.UserAgent
+	var (
+		totalClick  int
+		dailyClicks []dto.DailyClicks
+		topAgents   []dto.UserAgent
 
-	// 	err1 error
-	// 	err2 error
-	// 	err3 error
-	// )
+		err1 error
+		err2 error
+		err3 error
+	)
 
-	// var wg sync.WaitGroup
-	// wg.Add(3)
+	var wg sync.WaitGroup
+	wg.Add(3)
 
-	// go func() {
-	// 	defer wg.Done()
-	// 	totalClick, err1 = s.redirectLog.GetTotalClicks(shortCode)
-	// }()
+	go func() {
+		defer wg.Done()
+		totalClick, err1 = s.redirectLog.GetTotalClicks(shortCode)
+	}()
 
-	// go func() {
-	// 	defer wg.Done()
-	// 	dailyClicks, err2 = s.redirectLog.GetUrlDailyClicks(shortCode)
-	// }()
+	go func() {
+		defer wg.Done()
+		dailyClicks, err2 = s.redirectLog.GetUrlDailyClicks(shortCode)
+	}()
 
-	// go func() {
-	// 	defer wg.Done()
-	// 	topAgents, err3 = s.redirectLog.GetTopUserAgents(shortCode)
-	// }()
+	go func() {
+		defer wg.Done()
+		topAgents, err3 = s.redirectLog.GetTopUserAgents(shortCode)
+	}()
 
-	// wg.Wait()
+	wg.Wait()
 
-	// // prioritize returning the first error encountered
-	// if err1 != nil {
-	// 	return dto.UrlStatsResponse{}, err1
-	// }
-	// if err2 != nil {
-	// 	return dto.UrlStatsResponse{}, err2
-	// }
-	// if err3 != nil {
-	// 	return dto.UrlStatsResponse{}, err3
-	// }
+	// prioritize returning the first error encountered
+	if err1 != nil {
+		return dto.UrlStatsResponse{}, err1
+	}
+	if err2 != nil {
+		return dto.UrlStatsResponse{}, err2
+	}
+	if err3 != nil {
+		return dto.UrlStatsResponse{}, err3
+	}
 
-	// return dto.UrlStatsResponse{
-	// 	ShortCode:     shortCode,
-	// 	TotalClicks:   totalClick,
-	// 	ClicksPerDay:  dailyClicks,
-	// 	TopUserAgents: topAgents,
-	// }, nil
+	return dto.UrlStatsResponse{
+		ShortCode:     shortCode,
+		TotalClicks:   totalClick,
+		ClicksPerDay:  dailyClicks,
+		TopUserAgents: topAgents,
+	}, nil
 }
 
 func NewService(repo Repository, redirectLog redirectlog.Service, cache cache.Cache) *urlService {

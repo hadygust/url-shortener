@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS urls (
     short_code text NOT NULL,
 		original_url text NOT NULL,
 		created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-		expires_at TIMESTAMPTZ,
+		expires_at TIMESTAMPTZ NOT NULL,
 		CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT short_code_unique UNIQUE(short_code)
 );

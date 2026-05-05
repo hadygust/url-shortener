@@ -3,7 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/hadygust/url-shortener/internal/dto"
@@ -67,18 +67,18 @@ func (r *RedisCache) Get(key string) (any, error) {
 		return nil, nil
 	}
 	if err != nil {
-		log.Println("error fetching redis")
+		slog.Error("error fetching redis")
 		return nil, err
 	}
 
 	var data any
 	err = json.Unmarshal([]byte(val), &data)
 	if err != nil {
-		log.Println("error unmarshalling cache")
+		slog.Error("error unmarshalling cache")
 		return nil, err
 	}
 
-	log.Printf("Got from cache: %#v", data)
+	slog.Info("Got from cache: %#v", data)
 	return data, nil
 }
 

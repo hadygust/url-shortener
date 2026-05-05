@@ -2,7 +2,7 @@ package url
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -15,14 +15,12 @@ func (h *handler) CreateUrl(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	log.Printf("Url Req: %v", urlReq)
 
 	user, ok := c.Get("user")
 	if !ok {
 		c.JSON(http.StatusUnauthorized, errors.New("You must be logged in to do that"))
 		return
 	}
-	log.Printf("User: %v", user.(dto.UserResponse))
 
 	urlResp, err := h.svc.CreateUrl(urlReq, user.(dto.UserResponse).ID.String())
 	if err != nil {
@@ -55,7 +53,7 @@ func (h *handler) GetOrigin(c *gin.Context) {
 	ipAddress := c.ClientIP()
 	userAgent := c.GetHeader("User-Agent")
 
-	log.Printf("ip: %s, agent: %s", ipAddress, userAgent)
+	slog.Info("user metadata", "ip", ipAddress, "agent", userAgent)
 
 	origin, err := h.svc.GetOrigin(shortCode, ipAddress, userAgent)
 	if err != nil {
@@ -90,6 +88,7 @@ func (h *handler) GetUrlStats(c *gin.Context) {
 	stats, err := h.svc.GetStats(shortCode)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	c.JSON(http.StatusOK, stats)

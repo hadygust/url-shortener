@@ -1,8 +1,6 @@
 package url
 
 import (
-	"log"
-
 	"github.com/hadygust/url-shortener/internal/model"
 	"github.com/jmoiron/sqlx"
 )
@@ -71,7 +69,6 @@ func (repo *urlRepository) DeleteUrl(shortCode string, userId string) (model.Url
 
 	deletedUrl := model.Url{}
 
-	log.Println(shortCode)
 	err := repo.db.Get(&deletedUrl, query, shortCode, userId)
 	if err != nil {
 

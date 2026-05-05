@@ -7,11 +7,11 @@ import (
 )
 
 type UrlResponse struct {
-	ID          string     `json:"id"`
-	ShortCode   string     `json:"short_code"`
-	OriginalUrl string     `json:"original_url"`
-	CreatedAt   time.Time  `json:"created_at"`
-	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
+	ID          string    `json:"id"`
+	ShortCode   string    `json:"short_code"`
+	OriginalUrl string    `json:"original_url"`
+	CreatedAt   time.Time `json:"created_at"`
+	ExpiresAt   time.Time `json:"expires_at,omitempty"`
 }
 
 type CreateUrlRequest struct {
@@ -31,6 +31,6 @@ func NewUrlResponse(url model.Url) *UrlResponse {
 		ShortCode:   url.ShortCode,
 		OriginalUrl: url.OriginalUrl,
 		CreatedAt:   url.CreatedAt.Time,
-		ExpiresAt:   &url.ExpiresAt.Time,
+		ExpiresAt:   url.ExpiresAt.Time,
 	}
 }
